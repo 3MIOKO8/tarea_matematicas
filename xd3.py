@@ -22,25 +22,25 @@ def law_of_cosines_angle(a, b, c):
 # --------------------------
 # Generador de triángulos
 # --------------------------
-def generar_triangulo(tipo="aleatorio", scale=1.0):
-    def random_angles_for(tipo):
-        if tipo == "rectangulo":
-            A = random.uniform(20,70)
+def generar_triangulo(tipo="aleatorio", scale=1.0):  
+    def random_angles_for(tipo): # metodo para generar triangulos dependiendo del tipo
+        if tipo == "rectangulo": # genera el angulo A entre 20 - 70 y el B 90     
+            A = random.uniform(20,70) 
             B = 90.0
             C = 90.0 - A
-        elif tipo == "agudo":
+        elif tipo == "agudo": # A entre 2 - 70, el B entre 20-80 y C es el sobrante
             A = random.uniform(20,70)
             B = random.uniform(20, 80)
             C = 180 - A - B
             if C <= 0 or C >= 90:
                 return None
-        elif tipo == "obtuso":
+        elif tipo == "obtuso":# solo A debe ser un angulo mas grande y B mas pequeño C el sobrante
             A = random.uniform(91,140)
             B = random.uniform(10, 60)
             C = 180 - A - B
             if C <= 0:
                 return None
-        else:
+        else:# si es al azar elige libremente los angulos
             A = random.uniform(20, 100)
             B = random.uniform(20, 120)
             C = 180 - A - B
@@ -48,19 +48,27 @@ def generar_triangulo(tipo="aleatorio", scale=1.0):
                 return None
         return A, B, C
 
-    angles = None
-    for _ in range(30):
-        angles = random_angles_for(tipo)
-        if angles:
-            break
+    angles = None # se incia sin ningun angulo obviamente
+    for _ in range(30): # aca se esta dando un bucle de hasta 30 vueltas
+        angles = random_angles_for(tipo)   
+        if angles:  # si encuentra los angulos va a parar sino sigue
+            break 
     if not angles:
-        angles = (50.0, 60.0, 70.0)
+        # si pasa mas de 30 intentos y si no genera angulos validos entre si
+        # los angulos seran 50, 60, 70 por defecto que si son validos
+        angles = (50.0, 60.0, 70.0) 
     A, B, C = angles
-
+        # aca generamos los lados entre 4 - 12 para no romper el canvas de que sea muy grande
     a = random.uniform(4, 12) * scale
+    # lo mas importante aca aplicamos la ley del seno para determinar el tamaño completo del
+    # triangulo
     sinA = math.sin(math.radians(A))
+    # si por casualidad sin a ES 0 se genera de nuevo
     if sinA == 0:
         return generar_triangulo(tipo, scale)
+    # ley seno a/sen(A)
+    # luego guardamos en una variable k para hacer k*sen(B) y k*sen(C)
+    # con esto finalmente tendremos el tamaño completo del triangulo segun el tamaño de sus angulos
     k = a / sinA
     b = k * math.sin(math.radians(B))
     c = k * math.sin(math.radians(C))
@@ -266,34 +274,44 @@ class TriangulosApp:
         self._draw_labels()
         self._update_info_panel()
 
+
     def _draw_triangle(self):
+        #Simple: obtiene las longitudes reales (números) y las asegura como float.
+        #agarra los lados a,b,c
         a = float(self.tri['a'])
         b = float(self.tri['b'])
         c = float(self.tri['c'])
+        # Calcular la ESCALA para que el triángulo quepa en el canvas
+        margin = 40 # → deja espacio en los bordes.
+        max_side = max(a, b, c)  # max_side = el lado más largo del triángulo.
+        escala = min((self.canvas_w - 2*margin) / max_side, #(ancho disponible) / lado más largo 
+                     (self.canvas_h - 2*margin) / max_side) * 0.9  #(alto disponible) / lado más largo
+        # LUEGO SE MULTIPLICA POR 0.9 PARA DEJAR UN MARGEN DEL 10% cuando se dibuje en el cuadrado que vee el usuario
 
-        margin = 40
-        max_side = max(a, b, c)
-        escala = min((self.canvas_w - 2*margin) / max_side,
-                     (self.canvas_h - 2*margin) / max_side) * 0.9
-
+#Convertir los lados REALES a lados EN PIXELES
         a_len = a * escala
         b_len = b * escala
         c_len = c * escala
-
+#Queremos DIBUJAR ese segmento BC como una línea horizontal abajo del canvas.
+#Para que el triángulo siempre se vea bonito y estable.
+#Esta línea calcula la coordenada X del punto B de forma que el segmento BC (de largo a_len) 
+#quede perfectamente centrado dentro del ancho del canvas. Se usa la fórmula clásica de centrado: (ancho_total − ancho_objeto) / 2.
         Bx = (self.canvas_w - a_len) / 2
-        By = self.canvas_h - margin
-        Cx = Bx + a_len
+# 
+        By = self.canvas_h - margin # esto es para colocarlo un poquito por encima del borde para que el segmento BC no se vea feo
+        
+        Cx = Bx + a_len 
         Cy = By
-
+#aca empieza Dónde va el punto A (el vértice de arriba)
         d = a_len
-        x_proj = (c_len*c_len - b_len*b_len + d*d) / (2*d)
-        tmp = c_len*c_len - x_proj*x_proj
+        x_proj = (c_len*c_len - b_len*b_len + d*d) / (2*d) # aplicando la ley de coseno se peude ayar la pocison en el eje x de angulo A
+        tmp = c_len*c_len - x_proj*x_proj # para allar la altura uso pitagoras vertical² = hipotenusa² − horizontal²
         if tmp < 0:
             tmp = 0
-        y_alt = math.sqrt(tmp)
+        y_alt = math.sqrt(tmp) # se aplica la raiz cuadrada de tmp que era lo que haciendo de sta forma encontradno la posicion de A entre el eje X y Y
 
         Ax = Bx + x_proj
-        Ay = By - y_alt
+        Ay = By - y_alt # Para colocar A arriba de B, tienes que restar esa altura: Restar en Y significa subir en la pantalla.
 
         self.pts = {'A': (Ax, Ay), 'B': (Bx, By), 'C': (Cx, Cy)}
 
